@@ -8,7 +8,6 @@ List of Files:
 1) combn_sim_s1_bmz_dp.R: Simulation study for proposed BMZ-DP model with piecewise constant function for baseline hazard of recurrent process
 2) combn_sim_s2_bmz_dp.R: Simulation study for proposed BMZ-DP model with Weibull distribution for baseline hazard of recurrent process
 3) real_data_analysis_wp.R: Analysis of real STRIDE data based on BMZ-DP with piecewise constant function for baseline hazard of recurrent process
-4) real_data.txt: Real STRIDE data
 
 Notes: 
 1) The sample size and cluster number is based on n and num_hos
