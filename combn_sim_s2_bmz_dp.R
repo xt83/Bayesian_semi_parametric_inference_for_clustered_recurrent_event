@@ -390,6 +390,7 @@ mu_hos_temp<- mu_hos[1,]
 
 
 #log_h_functions
+#eta
 log_h_eta<- function(eta_val){
   eta_temp[k]<- eta_val
   logit_prob<- z_matrix%*%eta_temp
@@ -402,7 +403,7 @@ log_h_eta<- function(eta_val){
   return(val)
   
 }
-
+#betar
 log_h_betar<- function(betar_val){
   sloglik<- 0
   betar_temp[k]<- betar_val
@@ -424,7 +425,7 @@ log_h_betar<- function(betar_val){
   
   return(val)
 }
-
+#kesi
 log_h_kesi<- function(kesi_val){
   sloglik<- 0
   kesi_temp<- kesi_val
@@ -446,7 +447,7 @@ log_h_kesi<- function(kesi_val){
   
   return(val)
 }
-
+#gamma_sub
 log_h_gamma_sub<- function(gamma_sub_val){
   gamma_temp[k]<- gamma_sub_val
   num_rec_l<- observed[k,(pd+pr+6)]
@@ -478,7 +479,7 @@ log_h_gamma_sub<- function(gamma_sub_val){
   
   #return(val)
 #}
-
+#zeta
 log_h_zeta<- function(zeta_val){
   sloglik<- 0
   zeta_temp<- zeta_val
@@ -500,7 +501,7 @@ log_h_zeta<- function(zeta_val){
   
   return(val)
 }
-
+#mu_intercept
 log_h_mu_intercept<- function(mu_intercept_val){
   sloglik<- 0
   mu_intercept_temp<- mu_intercept_val
@@ -522,7 +523,7 @@ log_h_mu_intercept<- function(mu_intercept_val){
   
   return(val)
 }
-
+#betad
 log_h_betad<- function(betad_val){
   sloglik<- 0
   betad_temp[k]<- betad_val
@@ -545,7 +546,7 @@ log_h_betad<- function(betad_val){
   return(val)
 }
 
-
+#tao
 log_h_tao<- function(tao_val){
   sloglik<- 0
   tao_temp<- tao_val
@@ -567,7 +568,7 @@ log_h_tao<- function(tao_val){
   
   return(val)
 }
-
+#dp cluster for mu_hos
 log_h_b_dp_cluster<- function(b_dp_cluster_val){
   sloglik<- 0
   mu_hos_temp[s_label[i,,k]==1]<- b_dp_cluster_val
@@ -592,7 +593,7 @@ log_h_b_dp_cluster<- function(b_dp_cluster_val){
   
   return(val)
 }
-
+#dp cluster for sigma
 log_h_b_dp_cluster_n<- function(b_dp_cluster_val_n){
   sloglik<- 0
   sigma_temp[s_label_n[i,,k]==1]<- b_dp_cluster_val_n
@@ -618,7 +619,7 @@ log_h_b_dp_cluster_n<- function(b_dp_cluster_val_n){
 ###MCMC algorithm
 
 for (i in 2:mcmc_samples){
-  # betar
+  #update betar
   betar[i,]<- betar[(i-1),]
   
   for (k in 1:pr){
@@ -634,7 +635,7 @@ for (i in 2:mcmc_samples){
     betar_temp[k]<- betar[i,k] #make sure betar_temp always uses the latest updated value
   }
   
-  
+  #update kesi
   kesi[i]<- kesi[(i-1)]
   
   kesi_proposed<- rnorm(n=1,mean=kesi[(i-1)],sd=sqrt(metrop_var_kesi))
@@ -650,7 +651,7 @@ for (i in 2:mcmc_samples){
   
   kesi_temp<- kesi[i] 
   
-  # gamma_sub
+  #update gamma_sub
   gamma_sub[i,]<- gamma_sub[(i-1),]
   
   for (k in 1:n){
@@ -681,13 +682,13 @@ for (i in 2:mcmc_samples){
     }
   }
   
-  #epislon
+  #update epislon
   for (k in 1:num_hos){
     hos_ind_chosen<- which(observed[,2]==k)
     epislon[i,k]<- 1/rgamma(1, (a0+ (sum(observed[,2]==k)/2)), (b0+ ((sum((log(gamma_sub[i,hos_ind_chosen]))^2))/2)))
   }
   
-  # p 
+  #update p 
   eta[i,]<- eta[(i-1),]
   
   for (k in 1:pc){
@@ -705,7 +706,7 @@ for (i in 2:mcmc_samples){
   
   p[i,]<- 1/(1 + exp(-z_matrix%*%eta[i,]))
   
-  # y: only people with delta=1 and num_rec=0 have this 
+  #update y: only people with num_rec=0 have this 
   correct_indicator_num<- 0
   
   for (k in y_index){
@@ -742,22 +743,8 @@ for (i in 2:mcmc_samples){
     
   }
   
-  # sigma
-  #sigma[i]<- sigma[(i-1)]
-  
-  #sigma_proposed<- rnorm(n=1,mean=sigma[(i-1)],sd=sqrt(metrop_var_sigma))
-  
-  #if (sigma_proposed>0) {
-    #ratio<- exp(log_h_sigma(sigma_proposed) - log_h_sigma(sigma[(i-1)]))
-    
-    #if(ratio>=runif(n=1,min=0,max=1)){
-      #sigma[i]<- sigma_proposed
-      #sigma_accept<- sigma_accept+1
-    #}
- # }
-  
- # sigma_temp<- sigma[i] 
-  
+  #update sigma
+  #s_label
   for (l in 1:n){
     for (s in 1:num_dp_cluster_n){
       num_rec_l<- observed[l,(pd+pr+6)]
@@ -772,7 +759,7 @@ for (i in 2:mcmc_samples){
     sigma_temp[l]<- b_dp_cluster_n[(i-1),(s_label_n[i,l,]==1)]
   }
   
-  #b_dp_cluster: updating of this is equivalent update of mu_hos
+  #b_dp_cluster_n: updating of this is equivalent update of sigma
   b_dp_cluster_n[i,]<- b_dp_cluster_n[(i-1),]
   
   for (k in 1:num_dp_cluster_n){
@@ -809,7 +796,7 @@ for (i in 2:mcmc_samples){
   
   
   
-  #zeta
+  #update zeta
   
   zeta[i]<- zeta[(i-1)]
   
@@ -824,7 +811,7 @@ for (i in 2:mcmc_samples){
   
   zeta_temp<- zeta[i] 
   
-  #mu_intercept
+  #update mu_intercept
   
   mu_intercept[i]<- mu_intercept[(i-1)]
   
@@ -839,7 +826,7 @@ for (i in 2:mcmc_samples){
   
   mu_intercept_temp<-  mu_intercept[i]
   
-  # betad
+  #update betad
   betad[i,]<- betad[(i-1),]
   
   for (k in 1:pd){
@@ -859,7 +846,7 @@ for (i in 2:mcmc_samples){
   #sigma2d
   #sigma2d[i]<- 1/rgamma(1,(asigmad+(pd/2)),(bsigmad+ (sum(betad[i,]^2)/2)))
   
-  #tao
+  #update tao
   
   tao[i]<- tao[(i-1)]
   
@@ -874,7 +861,7 @@ for (i in 2:mcmc_samples){
   
   tao_temp<- tao[i] 
   
-  #mu_hos
+  #update mu_hos
   #s_label
   
   for (k in 1:num_hos){
