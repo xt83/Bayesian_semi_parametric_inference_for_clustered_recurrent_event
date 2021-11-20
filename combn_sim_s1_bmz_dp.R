@@ -264,8 +264,8 @@ log_l_ij<- function(u_ij,delta_ij,d_ij_min,t_vector,y_ij,zd_ij,sigma, gamma_ij,z
 #n<- 1000# num of subjects
 #num_hos<- 100 # num of hospitals
 #observed<- matrix(0,nrow=n,ncol=50)# input matrix containing all the information 
-#pr<- 5
-#pd<- 5
+#pr<- 3
+#pd<- 3
 
 
 #initialization of mcmc parameters
@@ -312,9 +312,7 @@ eta[1,]<-  eta_true
 eta_temp<- eta[1,]
 eta_accept<- rep(0,times=pc)
 metrop_var_eta<- rep(0.8^2,times=pc)
-#eta<- matrix(0,nrow=mcmc_samples,ncol=(pc+1))# need to consider intercept
-#eta_accept<- rep(0,times=(pc+1))
-#metrop_var_eta<- rep(0.05,times=(pc+1))
+
 
 y_index<- which(observed[,3]==0)# people need to decide between y=0 and y=1
 y_not_index<- which (observed[,3]!=0) # people don't need to decide between y=0 and y=1; y always 0 (anyway its value won't affect the likelihood, so what value y takes on doesn't really matter)
@@ -327,14 +325,6 @@ p[1,] <- 1/(1 + exp(-logit_prob_initial))
 y<- matrix(0,nrow=mcmc_samples,ncol=n)
 y[1,y_index]<- rbinom(length(y_index),1,p[1,])
 y_temp_decision<- rep(0,times=n)
-
-#survival process parameters
-#sigma<- rep(0,times=mcmc_samples)
-#sigma[1]<- sigma_true
-#sigma_accept<- 0
-#metrop_var_sigma<- 0.01
-#asigma<- 0.1
-#bsigma<- 0.1
 
 zeta<- rep(0,times=mcmc_samples)
 zeta[1]<- zeta_true
@@ -381,10 +371,6 @@ b_dp_cluster_accept<- rep(0,times=num_dp_cluster)
 b_dp_cluster_accept_n<- rep(0,times=num_dp_cluster_n)
 metrop_var_b_dp_cluster<- rep(0.5,times=num_dp_cluster)
 metrop_var_b_dp_cluster_n<- rep(1,times=num_dp_cluster_n)
-#metrop_var_b_dp_cluster[c(15,17,18)]<- rep(2,times=3)
-#metrop_var_b_dp_cluster[c(14,16,20)]<- rep(0.5,times=3)
-#metrop_var_b_dp_cluster[c(1,4,5,11)]<- rep(3,times=4)
-#metrop_var_b_dp_cluster[19]<- 0.5
 
 
 w_dp_cluster<- matrix(0,nrow=mcmc_samples,ncol=num_dp_cluster)
@@ -414,7 +400,7 @@ mu_hos_temp<- mu_hos[1,]
 
 
 #log_h_functions
-#eta
+#eta 
 log_h_eta<- function(eta_val){
   eta_temp[k]<- eta_val
   logit_prob<- z_matrix%*%eta_temp
@@ -482,27 +468,7 @@ log_h_gamma_sub<- function(gamma_sub_val){
   
 }
 
-#log_h_sigma<- function(sigma_val){
- # sloglik<- 0
-  #sigma_temp<- sigma_val
-  
-  #for (l in 1:n){
-    #num_rec_l<- observed[l,(pd+pr+6)]
-    
-    #if (num_rec_l>0){
-      #sloglik<- sloglik+ log_l_ij(observed[l,3],observed[l,4],observed[l,5],observed[l,(pd+pr+7):(pd+pr+num_rec_l+6)],y_temp[l],observed[l,6:(pd+5)],sigma_temp, gamma_temp[l],zeta_temp,mu_intercept_temp,betad_temp,tao_temp,mu_hos_temp[observed[l,2]],observed[l,(pd+6):(pd+pr+5)],betar_temp,lambda_n_temp,time_q)
-    #}
-    
-    #else{
-      #sloglik<- sloglik+ log_l_ij(observed[l,3],observed[l,4],observed[l,5],0,y_temp[l],observed[l,6:(pd+5)],sigma_temp, gamma_temp[l],zeta_temp,mu_intercept_temp,betad_temp,tao_temp,mu_hos_temp[observed[l,2]],observed[l,(pd+6):(pd+pr+5)],betar_temp,lambda_n_temp,time_q)
-    #}
-    
-  #}
-  
-  #val<- sloglik- (asigma+1)*log(sigma_val)-(sigma_val/bsigma)
-  
-  #return(val)
-#}
+
 #zeta
 log_h_zeta<- function(zeta_val){
   sloglik<- 0
@@ -657,7 +623,7 @@ for (i in 2:mcmc_samples){
     
     betar_temp[k]<- betar[i,k] #make sure betar_temp always uses the latest updated value
   }
-  # update lambda
+  # update lambda: piecewise constants
   lambda_n[i,]<-lambda_n[(i-1),]
   for(s in 1:5){
     lambda_n_proposed<- abs(rnorm(n=1,mean=lambda_n[(i-1),s],sd=sqrt(metrop_var_lambda_n[s])))
@@ -762,8 +728,8 @@ for (i in 2:mcmc_samples){
     
     
   }
-  # update sigma
-  # udpate s label
+  # update sigma：individual shape parameter for the terminal event submodel(kappa_ij)
+  # udpate s label： mapping vector in DP process
   for (l in 1:n){
     for (s in 1:num_dp_cluster_n){
       num_rec_l<- observed[l,(pd+pr+6)]
@@ -778,7 +744,7 @@ for (i in 2:mcmc_samples){
     sigma_temp[l]<- b_dp_cluster_n[(i-1),(s_label_n[i,l,]==1)]
   }
   
-  #b_dp_cluster_n: updating of this is equivalent update of sigma
+  #b_dp_cluster_n: updating of this is equivalent update of sigma: individual shape parameter for the terminal event submodel(kappa_ij)
   b_dp_cluster_n[i,]<- b_dp_cluster_n[(i-1),]
   
   for (k in 1:num_dp_cluster_n){
@@ -862,9 +828,6 @@ for (i in 2:mcmc_samples){
   }
   
   
-  #sigma2d
-  #sigma2d[i]<- 1/rgamma(1,(asigmad+(pd/2)),(bsigmad+ (sum(betad[i,]^2)/2)))
-  
   #update tao
   
   tao[i]<- tao[(i-1)]
@@ -881,7 +844,7 @@ for (i in 2:mcmc_samples){
   tao_temp<- tao[i] 
   
   #update mu_hos
-  #s_label
+  #s_label: mapping vector in DP process
   
   for (k in 1:num_hos){
     for (s in 1:num_dp_cluster){
