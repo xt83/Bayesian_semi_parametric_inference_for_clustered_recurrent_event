@@ -635,7 +635,7 @@ for (i in 2:mcmc_samples){
     betar_temp[k]<- betar[i,k] #make sure betar_temp always uses the latest updated value
   }
   
-  #update kesi
+  #update kesi: shape parameter for the recurrent submodel
   kesi[i]<- kesi[(i-1)]
   
   kesi_proposed<- rnorm(n=1,mean=kesi[(i-1)],sd=sqrt(metrop_var_kesi))
@@ -743,8 +743,8 @@ for (i in 2:mcmc_samples){
     
   }
   
-  #update sigma
-  #s_label
+  #update sigma: individual shape parameter for the terminal event submodel(kappa_ij)
+  #s_label: mapping vector
   for (l in 1:n){
     for (s in 1:num_dp_cluster_n){
       num_rec_l<- observed[l,(pd+pr+6)]
@@ -759,7 +759,7 @@ for (i in 2:mcmc_samples){
     sigma_temp[l]<- b_dp_cluster_n[(i-1),(s_label_n[i,l,]==1)]
   }
   
-  #b_dp_cluster_n: updating of this is equivalent update of sigma
+  #b_dp_cluster_n: updating of this is equivalent update of sigma: individual shape parameter for the terminal event submodel(kappa_ij)
   b_dp_cluster_n[i,]<- b_dp_cluster_n[(i-1),]
   
   for (k in 1:num_dp_cluster_n){
@@ -796,7 +796,7 @@ for (i in 2:mcmc_samples){
   
   
   
-  #update zeta
+  #update zeta: the degree of unobserved associations between the recurrent and terminal event processes at the individual level(xi_1)
   
   zeta[i]<- zeta[(i-1)]
   
@@ -843,10 +843,7 @@ for (i in 2:mcmc_samples){
   }
   
   
-  #sigma2d
-  #sigma2d[i]<- 1/rgamma(1,(asigmad+(pd/2)),(bsigmad+ (sum(betad[i,]^2)/2)))
-  
-  #update tao
+  #update tao: the degree of unobserved associations between the recurrent and terminal event processes at the practice level(xi_2)
   
   tao[i]<- tao[(i-1)]
   
@@ -862,7 +859,7 @@ for (i in 2:mcmc_samples){
   tao_temp<- tao[i] 
   
   #update mu_hos
-  #s_label
+  #s_label: mapping vector
   
   for (k in 1:num_hos){
     for (s in 1:num_dp_cluster){
