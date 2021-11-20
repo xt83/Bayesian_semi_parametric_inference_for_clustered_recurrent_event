@@ -666,7 +666,7 @@ log_h_b_dp_cluster_n<- function(b_dp_cluster_val_n){
 ###MCMC algorithm
 
 for (i in 2:mcmc_samples){
-  #update betar
+  # update betar
   betar[i,]<- betar[(i-1),]
   
   for (k in 1:pr){
@@ -681,8 +681,7 @@ for (i in 2:mcmc_samples){
     
     betar_temp[k]<- betar[i,k] #make sure betar_temp always uses the latest updated value
   }
-  
-  #update lambda
+  # update lambda: piecewise constants
   lambda_n[i,]<-lambda_n[(i-1),]
   for(s in 1:5){
     lambda_n_proposed<- abs(rnorm(n=1,mean=lambda_n[(i-1),s],sd=sqrt(metrop_var_lambda_n[s])))
@@ -696,8 +695,8 @@ for (i in 2:mcmc_samples){
   lambda_n_temp[s]<-lambda_n[i,s]
   }
   
-  #update gamma_sub
-   gamma_sub[i,]<- gamma_sub[(i-1),]
+  # update gamma_sub
+  gamma_sub[i,]<- gamma_sub[(i-1),]
   
   for (k in 1:n){
     gamma_sub_proposed<- rnorm(n=1,mean=gamma_sub[(i-1),k],sd=sqrt(metrop_var_gamma_sub[k]))
@@ -705,12 +704,12 @@ for (i in 2:mcmc_samples){
     if (gamma_sub_proposed>0){
       
       ratio<- exp(log_h_gamma_sub(gamma_sub_proposed) - log_h_gamma_sub(gamma_sub[(i-1),k]))
-      if(is.nan(ratio)==F){
-        if(ratio>=runif(n=1,min=0,max=1)){
-          gamma_sub[i,k]<- gamma_sub_proposed
-          gamma_sub_accept[k]<- gamma_sub_accept[k]+1
-        }
+      
+      if(ratio>=runif(n=1,min=0,max=1)){
+        gamma_sub[i,k]<- gamma_sub_proposed
+        gamma_sub_accept[k]<- gamma_sub_accept[k]+1
       }
+      
     }
     
     gamma_temp[k]<- gamma_sub[i,k] 
@@ -727,14 +726,31 @@ for (i in 2:mcmc_samples){
     }
   }
   
-  #update epislon
+  # update epislon
   for (k in 1:num_hos){
     hos_ind_chosen<- which(observed[,2]==k)
     epislon[i,k]<- 1/rgamma(1, (a0+ (sum(observed[,2]==k)/2)), (b0+ ((sum((log(gamma_sub[i,hos_ind_chosen]))^2))/2)))
   }
   
+  # update p 
+  eta[i,]<- eta[(i-1),]
   
-  #update y: only people with num_rec=0 have this 
+  for (k in 1:pc){
+    eta_proposed<- rnorm(n=1,mean=eta[(i-1),k],sd=sqrt(metrop_var_eta[k]))
+    
+    ratio<- exp(log_h_eta(eta_proposed) - log_h_eta(eta[(i-1),k]))
+    
+    if(ratio>=runif(n=1,min=0,max=1)){
+      eta[i,k]<- eta_proposed
+      eta_accept[k]<- eta_accept[k]+1
+    }
+    
+    eta_temp[k]<- eta[i,k] #make sure always uses the latest updated value
+  }
+  
+  p[i,]<- 1/(1 + exp(-z_matrix%*%eta[i,]))
+  
+  # update y: only people with num_rec=0 have this 
   correct_indicator_num<- 0
   
   for (k in y_index){
@@ -764,11 +780,14 @@ for (i in 2:mcmc_samples){
       y_temp_decision[k]<- 0
     }
     
+    if (y_temp_decision[k]==y_true[k]){
+      correct_indicator_num<- correct_indicator_num+1
+    }
+    
     
   }
-  
-  #update sigma
-  #s label
+  # update sigma：individual shape parameter for the terminal event submodel(kappa_ij)
+  # udpate s label： mapping vector in DP process
   for (l in 1:n){
     for (s in 1:num_dp_cluster_n){
       num_rec_l<- observed[l,(pd+pr+6)]
@@ -783,7 +802,7 @@ for (i in 2:mcmc_samples){
     sigma_temp[l]<- b_dp_cluster_n[(i-1),(s_label_n[i,l,]==1)]
   }
   
-  #b_dp_cluster: updating of this is equivalent update of sigma
+  #b_dp_cluster_n: updating of this is equivalent update of sigma: individual shape parameter for the terminal event submodel(kappa_ij)
   b_dp_cluster_n[i,]<- b_dp_cluster_n[(i-1),]
   
   for (k in 1:num_dp_cluster_n){
@@ -820,7 +839,7 @@ for (i in 2:mcmc_samples){
   
   
   
-  #update zeta
+  #update zeta: the degree of unobserved associations between the recurrent and terminal event processes at the individual level(xi_1)
   
   zeta[i]<- zeta[(i-1)]
   
@@ -845,6 +864,7 @@ for (i in 2:mcmc_samples){
   
   if(ratio>=runif(n=1,min=0,max=1)){
     mu_intercept[i]<- mu_intercept_proposed
+    mu_intercept_accept<-  mu_intercept_accept+1
   }
   
   mu_intercept_temp<-  mu_intercept[i]
@@ -866,10 +886,7 @@ for (i in 2:mcmc_samples){
   }
   
   
-  #sigma2d
-  #sigma2d[i]<- 1/rgamma(1,(asigmad+(pd/2)),(bsigmad+ (sum(betad[i,]^2)/2)))
-  
-  #update tao
+  #update tao: the degree of unobserved associations between the recurrent and terminal event processes at the practice level(xi_2)
   
   tao[i]<- tao[(i-1)]
   
@@ -884,8 +901,8 @@ for (i in 2:mcmc_samples){
   
   tao_temp<- tao[i] 
   
-  #updatemu_hos
-  #s_label
+  #update mu_hos
+  #s_label: mapping vector in DP process
   
   for (k in 1:num_hos){
     for (s in 1:num_dp_cluster){
@@ -946,13 +963,15 @@ for (i in 2:mcmc_samples){
       w_dp_cluster[i,k]<- w_dp_cluster[i,k]*(1-w_inter_dp_cluster[i,s])
     }
   }
-  
   print(c("Completion %:", 
           round(100*i/mcmc_samples, 2)))
   if (i%%200==0){
     #save(mcmc_samples,betad,betar,sigma,kesi,y,y_index,file = paste0("stride_data_type_1_",as.numeric(args[1]), ".rdata")) 
     save.image(file="stride_data_type_1_analysis_noninformative_p_1f.rdata")
   }
+
+  
 }
+
 
 
