@@ -781,7 +781,7 @@ for (i in 2:mcmc_samples){
   
   
   
-  #update zeta
+  #update zeta: the degree of unobserved associations between the recurrent and terminal event processes at the individual level(xi_1)
   
   zeta[i]<- zeta[(i-1)]
   
@@ -828,7 +828,7 @@ for (i in 2:mcmc_samples){
   }
   
   
-  #update tao
+  #update tao: the degree of unobserved associations between the recurrent and terminal event processes at the practice level(xi_2)
   
   tao[i]<- tao[(i-1)]
   
